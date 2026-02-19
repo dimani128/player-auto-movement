@@ -49,12 +49,15 @@ script.on_event(defines.events.on_player_selected_area, function(event)
 
 		local collision_mask = { -- TODO: fix it pathing through entities
 			layers = {
-				item = true,
-				object = true,
 				player = true,
 				water_tile = true,
+				object = true,
 				is_object = true,
 				is_lower_object = true,
+				cliff = true,
+				car = true,
+				lava_tile = true,
+				rail_support = true,
 			},
 		}
 
@@ -104,6 +107,10 @@ script.on_event(defines.events.on_script_path_request_finished, function(event)
 		return
 	end
 
+	if not storage.moving_players[player_index] then
+		return
+	end
+
 	local player = game.players[player_index]
 	if not player or not player.valid then
 		path_requests[event.id] = nil
@@ -114,7 +121,10 @@ script.on_event(defines.events.on_script_path_request_finished, function(event)
 	if event.path and #event.path > 1 then
 		storage.moving_players[player_index].path = event.path
 	else
-		player.print("No path found! (reason: " .. (event.reason or "unknown") .. ")")
+		player.print("No path found!")
+		if event.try_again_later then
+			player.print("Pathfinder busy, try again.")
+		end
 		storage.moving_players[player_index] = nil
 	end
 
