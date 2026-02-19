@@ -124,12 +124,11 @@ end)
 local function get_movement_target(player)
 	local vehicle = player.vehicle
 	if vehicle and vehicle.valid then
-		if vehicle.type == "spider-vehicle" then
-			return "spidertron", vehicle
-		elseif vehicle.type == "car" or vehicle.type == "tank" then
+		if vehicle.type == "car" or vehicle.type == "tank" then
 			return "turning_vehicle", vehicle
 		end
 	end
+	-- spidertron as well
 	return "character", player.character
 end
 
@@ -263,8 +262,6 @@ script.on_event(defines.events.on_tick, function(event)
 				end
 
 				if target_type == "character" then
-					target_entity.walking_state = { walking = true, direction = direction }
-				elseif target_type == "spidertron" then
 					target_entity.walking_state = { walking = true, direction = direction }
 				elseif target_type == "turning_vehicle" then
 					apply_vehicle_movement(target_entity, direction)
