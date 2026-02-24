@@ -11,17 +11,6 @@ local input_directions = {
 
 local path_requests = {}
 
-script.on_event("movement-tool-input", function(event)
-	local player = game.players[event.player_index]
-	if not player or not player.valid then
-		return
-	end
-
-	player.clear_cursor()
-	player.cursor_stack.set_stack({ name = "movement-tool", count = 1 })
-	player.cursor_stack_temporary = true
-end)
-
 script.on_event(defines.events.on_player_selected_area, function(event)
 	if event.item == "movement-tool" then
 		local player = game.players[event.player_index]

@@ -2,9 +2,11 @@ data:extend({
 	{
 		type = "selection-tool",
 		name = "movement-tool",
+		flags = {"only-in-cursor", "not-stackable", "spawnable"},
+		auto_recycle = false,
+		subgroup = "spawnables",
 		icon = "__base__/graphics/icons/tooltips/tooltip-category-steam.png",
 		icon_size = 40,
-		subgroup = "tool",
 		order = "y[movement-tool]",
 		stack_size = 1,
 		select = { mode = { "any-entity" }, range = 1000, border_color = { 0, 1, 1 }, cursor_box_type = "entity" },
@@ -19,14 +21,14 @@ data:extend({
 	{
 		type = "shortcut",
 		name = "movement-tool",
-		action = "lua",
-		localised_name = { "item-name.movement-tool" },
+		action = "spawn-item",
+		localised_name = {"shortcut.movement-tool"},
+		associated_control_input = "movement-tool-input",
+		item_to_spawn = "movement-tool",
 		icon = "__base__/graphics/icons/tooltips/tooltip-category-steam.png",
 		icon_size = 40,
 		small_icon = "__base__/graphics/icons/tooltips/tooltip-category-steam.png",
-		small_icon_size = 40,
-		order = "y[movement-tool]",
-		associated_control_input = "movement-tool-input",
+		small_icon_size = 40
 	},
 	{
 		type = "custom-input",
