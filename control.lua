@@ -11,10 +11,41 @@ local input_directions = {
 
 local path_requests = {}
 
+local function get_movement_target(player)
+    local vehicle = player.vehicle
+    if vehicle and vehicle.valid then
+        if vehicle.type == "car" or vehicle.type == "tank" then
+            return "turning_vehicle", vehicle
+        elseif vehicle.name == "spidertron" then
+            return "spidertron", vehicle
+        end
+    end
+    return "character", player.character
+end
+
+local function player_can_fly(player)
+	-- TODO: recalculate path on armor change
+    if not player.character or not player.character.valid then
+        return false
+    end
+    
+    local armor = player.character.get_inventory(defines.inventory.character_armor)[1]
+    if armor and armor.valid and armor.valid_for_read then
+        local armor_prototype = armor.prototype
+        return armor_prototype.provides_flight == true
+    end
+    return false
+end
+
 script.on_event(defines.events.on_player_selected_area, function(event)
 	if event.item == "movement-tool" then
 		local player = game.players[event.player_index]
 		if not player or not player.valid then
+			return
+		end
+
+		if player.force.is_pathfinder_busy() then
+			player.print("pathfinder busy")
 			return
 		end
 
@@ -36,16 +67,13 @@ script.on_event(defines.events.on_player_selected_area, function(event)
 			target_pos = { x = player_pos.x, y = player_pos.y }
 		end
 
-		local vehicle = player.vehicle
-
-		if player.force.is_pathfinder_busy() then
-			player.print("pathfinder busy")
-			return
-		end
+		local target_type, target_entity = get_movement_target(player)
+		local max_gap_size = (target_type == "spidertron") and 14 or 0
+		local collision_mask = (player_can_fly(player)) and {layers={}} or player_character.prototype.collision_mask
 
 		local path_id = player_character.surface.request_path({
 			bounding_box = player_character.prototype.collision_box,
-			collision_mask = player_character.prototype.collision_mask,
+			collision_mask = collision_mask,
 			start = player_character.position,
 			goal = target_pos,
 			force = player_character.force,
@@ -55,7 +83,7 @@ script.on_event(defines.events.on_player_selected_area, function(event)
 				cache = false,
 			},
 			entity_to_ignore = player_character,
-			path_resolution_modifier = 0
+			max_gap_size = max_gap_size,
 		})
 
 		if path_id then
@@ -101,17 +129,6 @@ script.on_event(defines.events.on_script_path_request_finished, function(event)
 
 	path_requests[event.id] = nil
 end)
-
-local function get_movement_target(player)
-	local vehicle = player.vehicle
-	if vehicle and vehicle.valid then
-		if vehicle.type == "car" or vehicle.type == "tank" then
-			return "turning_vehicle", vehicle
-		end
-	end
-	-- spidertron as well
-	return "character", player.character
-end
 
 -- TODO: needs a complete overhaul
 local function apply_vehicle_movement(vehicle, target_direction)
@@ -165,7 +182,8 @@ script.on_event(defines.events.on_tick, function(event)
 			local current_pos = target_entity.position
 			local distance = math.sqrt((current_pos.x - target_pos.x) ^ 2 + (current_pos.y - target_pos.y) ^ 2)
 
-			if distance <= 0.25 then
+			local waypoint_threshold = (target_type == "spidertron") and 5 or 0.25
+			if distance <= waypoint_threshold then
 				movement_data.current_waypoint = movement_data.current_waypoint + 1
 			end
 
@@ -213,7 +231,7 @@ script.on_event(defines.events.on_tick, function(event)
 			local dy = target_pos.y - current_pos.y
 			local abs_dx = math.abs(dx)
 			local abs_dy = math.abs(dy)
-			local threshold = 0.1
+			local threshold = (target_type == "spidertron") and 2.5 or 0.1
 
 			if abs_dx > threshold or abs_dy > threshold then
 				local direction
@@ -242,8 +260,8 @@ script.on_event(defines.events.on_tick, function(event)
 					end
 				end
 
-				if target_type == "character" then
-					target_entity.walking_state = { walking = true, direction = direction }
+				if target_type == "character" or target_type == "spidertron" then
+					player.character.walking_state = { walking = true, direction = direction }
 				elseif target_type == "turning_vehicle" then
 					apply_vehicle_movement(target_entity, direction)
 				end

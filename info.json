@@ -1,6 +1,6 @@
 {
     "name": "player-auto-movement",
-    "version": "0.0.2",
+    "version": "0.0.3",
     "title": "Player Character Automatic Movement and Navigation",
     "author": "dimani128",
     "description": "A (very) work in progress automatic movement tool.",
