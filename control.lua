@@ -36,44 +36,26 @@ script.on_event(defines.events.on_player_selected_area, function(event)
 			target_pos = { x = player_pos.x, y = player_pos.y }
 		end
 
-		local collision_mask = { -- TODO: fix it pathing through entities
-			layers = {
-				player = true,
-				water_tile = true,
-				object = true,
-				is_object = true,
-				is_lower_object = true,
-				cliff = true,
-				car = true,
-				lava_tile = true,
-				rail_support = true,
-			},
-		}
-
 		local vehicle = player.vehicle
-		local pathfind_flags = { cache = false, prefer_straight_paths = true } -- TODO: allowing cache seems to sometimes plan terrible routes
 
-		local path_resolution_modifier = 0
-		local max_gap_size = 0
-
-		if vehicle and vehicle.valid then
-			if vehicle.type == "car" or vehicle.type == "tank" then
-				path_resolution_modifier = 4
-			elseif vehicle.type == "spider-vehicle" then
-				max_gap_size = 8
-			end
+		if player.force.is_pathfinder_busy() then
+			player.print("pathfinder busy")
+			return
 		end
 
-		local path_id = player.surface.request_path({
-			bounding_box = player_character.bounding_box,
-			collision_mask = collision_mask,
-			start = player_pos,
+		local path_id = player_character.surface.request_path({
+			bounding_box = player_character.prototype.collision_box,
+			collision_mask = player_character.prototype.collision_mask,
+			start = player_character.position,
 			goal = target_pos,
-			force = player.force,
-			pathfind_flags = pathfind_flags,
-			path_resolution_modifier = path_resolution_modifier,
-			max_gap_size = max_gap_size,
+			force = player_character.force,
+			radius = 0,
+			can_open_gates = true,
+			pathfind_flags = {
+				cache = false,
+			},
 			entity_to_ignore = player_character,
+			path_resolution_modifier = 0
 		})
 
 		if path_id then
@@ -146,16 +128,16 @@ local function apply_vehicle_movement(vehicle, target_direction)
 
 	if math.abs(angle_diff) < 0.785 then
 		vehicle.riding_state =
-			{ acceleration = defines.riding.acceleration.accelerating, direction = defines.riding.direction.straight }
+		{ acceleration = defines.riding.acceleration.accelerating, direction = defines.riding.direction.straight }
 	elseif math.abs(angle_diff) > 2.356 then
 		vehicle.riding_state =
-			{ acceleration = defines.riding.acceleration.reversing, direction = defines.riding.direction.straight }
+		{ acceleration = defines.riding.acceleration.reversing, direction = defines.riding.direction.straight }
 	elseif angle_diff > 0 then
 		vehicle.riding_state =
-			{ acceleration = defines.riding.acceleration.accelerating, direction = defines.riding.direction.right }
+		{ acceleration = defines.riding.acceleration.accelerating, direction = defines.riding.direction.right }
 	else
 		vehicle.riding_state =
-			{ acceleration = defines.riding.acceleration.accelerating, direction = defines.riding.direction.left }
+		{ acceleration = defines.riding.acceleration.accelerating, direction = defines.riding.direction.left }
 	end
 end
 
@@ -183,7 +165,7 @@ script.on_event(defines.events.on_tick, function(event)
 			local current_pos = target_entity.position
 			local distance = math.sqrt((current_pos.x - target_pos.x) ^ 2 + (current_pos.y - target_pos.y) ^ 2)
 
-			if distance <= 1.0 then
+			if distance <= 0.25 then
 				movement_data.current_waypoint = movement_data.current_waypoint + 1
 			end
 
